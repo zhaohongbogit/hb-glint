@@ -13,10 +13,11 @@ import java.io.IOException;
 public class MainActivity extends Activity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String GPIO_NAME = "BCM6";
+    private static final String GPIO_NAME = "BCM5";
 
     Handler handler = new Handler();
     Gpio gpio;
+    private int sequence = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,20 +63,15 @@ public class MainActivity extends Activity {
                 return;
             }
             try {
-                //闪灯一次
-                gpio.setValue(true);
-                Thread.sleep(200l);
-                gpio.setValue(false);
-                //等待一秒
-                Thread.sleep(1000l);
-                //连闪两次
-                gpio.setValue(true);
-                Thread.sleep(500l);
-                gpio.setValue(false);
-                Thread.sleep(300l);
-                gpio.setValue(true);
-                Thread.sleep(500l);
-                gpio.setValue(false);
+                if (sequence == 1) {
+                    //闪灯一次
+                    glint();
+                    sequence = 0;
+                } else {
+                    //连闪两次
+                    glint2();
+                    sequence = 1;
+                }
                 handler.postDelayed(runnable, 1000l);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -84,4 +80,28 @@ public class MainActivity extends Activity {
             }
         }
     };
+
+    /**
+     * 闪光一次
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    private void glint() throws IOException, InterruptedException {
+        gpio.setValue(true);
+        Thread.sleep(150l);
+        gpio.setValue(false);
+    }
+
+    /**
+     * 连续闪光2次
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private void glint2() throws InterruptedException, IOException {
+        glint();
+        Thread.sleep(150l);
+        glint();
+    }
 }
