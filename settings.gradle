@@ -1,1 +1,1 @@
-include ':app', ':led', ':power'
+include ':app', ':led', ':power', ':pwm'
