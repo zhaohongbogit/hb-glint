@@ -15,7 +15,8 @@ public class MainActivity extends Activity {
 
     private static final String PWM_BUS = "PWM0";
     private Pwm pwm;
-    private int sum = 10;
+    private double sum = 1;
+    private boolean mIsPulseIncreasing = true;
 
     private Handler handler = new Handler();
 
@@ -26,19 +27,19 @@ public class MainActivity extends Activity {
         try {
             pwm = service.openPwm(PWM_BUS);
             pwm.setPwmFrequencyHz(50);
-            pwm.setPwmDutyCycle(sum);
+            pwm.setPwmDutyCycle(1);
             pwm.setEnabled(true);
         } catch (IOException e) {
             Log.e(TAG, "Error setting the angle", e);
         }
-        handler.postDelayed(runnable, 3000);
+        handler.postDelayed(runnable, 300);
     }
 
     Runnable runnable = new Runnable() {
         @Override
         public void run() {
             setupServo();
-            handler.postDelayed(runnable, 3000);
+            handler.postDelayed(runnable, 300);
         }
     };
 
@@ -51,13 +52,20 @@ public class MainActivity extends Activity {
     private void setupServo() {
         try {
             Log.d(TAG, "===GO====sum:" + sum);
-            if (pwm != null) {
-                pwm.setPwmDutyCycle(sum);
-            }
-            if (sum == 10) {
-                sum = 20;
+            if (mIsPulseIncreasing) {
+                sum += 0.2;
             } else {
-                sum = 10;
+                sum -= 0.2;
+            }
+            if (sum > 2) {
+                sum = 2;
+                mIsPulseIncreasing = !mIsPulseIncreasing;
+            } else if (sum < 1) {
+                sum = 1;
+                mIsPulseIncreasing = !mIsPulseIncreasing;
+            }
+            if (pwm != null) {
+                pwm.setPwmDutyCycle(100 * sum / 20);
             }
         } catch (IOException e) {
             Log.e(TAG, "Error creating Servo", e);
