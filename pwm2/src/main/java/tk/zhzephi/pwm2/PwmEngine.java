@@ -8,7 +8,7 @@ import com.google.android.things.pio.Pwm;
 import java.io.IOException;
 
 /**
- * Pwm舵机控制引擎
+ * Pwm舵机控制引擎（SG92R辉盛）
  * Created by HONGBO on 2017/10/17 16:45.
  */
 
@@ -27,6 +27,7 @@ public class PwmEngine {
         try {
             mPwm = service.openPwm(pwmName);
             mPwm.setPwmFrequencyHz(50);
+            mPwm.setEnabled(true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -42,18 +43,7 @@ public class PwmEngine {
             return;
         }
         try {
-            mPwm.setEnabled(true);
-//            int i = 18;
-//            while (i > 0) {
-//                i--;
             mPwm.setPwmDutyCycle(2.5 + 10 * degree / 180);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-//            }
-            mPwm.setEnabled(false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -68,25 +58,15 @@ public class PwmEngine {
      * @param degree
      * @param gap
      */
-    public void setDegree(double degree, int gap) {
+    private void setDegree(double degree, int gap) {
         if (degree < 0 || degree > 180) {
             return;
         }
         try {
-            mPwm.setEnabled(true);
-            int i = 18; //设置18个脉冲周期确保角度转到位置，经测试最少17个周期才能到位(转动比较快，一周期机械运动不一定到位)
-            while (i > 0) {
-                i--;
-                try {
-                    mPwm.setPwmDutyCycle(2.5 + 10 * degree / 180);
-                    Thread.sleep(20);
-                    mPwm.setPwmDutyCycle(0);
-                    Thread.sleep(gap);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            mPwm.setEnabled(false);
+            mPwm.setPwmDutyCycle(2.5 + 10 * degree / 180);
+            Thread.sleep(gap);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -110,7 +90,11 @@ public class PwmEngine {
             swingThread = new Thread() {
                 @Override
                 public void run() {
-                    swing(begin, end, gapTime);
+                    try {
+                        swing(begin, end, gapTime);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             };
             if (null != swingThread) {
@@ -119,7 +103,7 @@ public class PwmEngine {
         }
     }
 
-    private void swing(double begin, double end, int gapTime) {
+    private void swing(double begin, double end, int gapTime) throws IOException {
         if (STATE_START == mState)
             setDegree(BEGIN_PLACE);
         while (STATE_START == mState) {
@@ -155,6 +139,7 @@ public class PwmEngine {
     public void close() {
         if (mPwm != null) {
             try {
+                mPwm.setEnabled(false);
                 mPwm.close();
             } catch (IOException e) {
                 e.printStackTrace();
