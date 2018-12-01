@@ -45,7 +45,17 @@ public class MainActivity extends Activity {
         } catch (IOException e) {
             Log.w(TAG, "Unable to access I2C device", e);
         }
+        testWrite();
         testRead();
+    }
+
+    private void testWrite() {
+        short t = 0x40;
+        try {
+            i2cDevice.writeRegWord(0xF3, t);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void testRead() {
@@ -53,7 +63,7 @@ public class MainActivity extends Activity {
 //            byte[] bytes = new byte[3];
 //            i2cDevice.read(bytes, 1);
 //            byte[] value = readCalibration(i2cDevice, READ_VALUE_START);
-            short value = i2cDevice.readRegWord(0xD0);
+            short value = i2cDevice.readRegWord(0xF3);
 //            byte value = i2cDevice.readRegByte(0x01);
             Log.d(TAG, "===============>读取气压计内容：" + value);
         } catch (IOException e) {
