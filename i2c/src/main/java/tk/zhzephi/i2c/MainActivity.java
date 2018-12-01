@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.things.pio.I2cDevice;
-import com.google.android.things.pio.PeripheralManagerService;
+import com.google.android.things.pio.PeripheralManager;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        PeripheralManagerService service = new PeripheralManagerService();
+        PeripheralManager service = PeripheralManager.getInstance();
         try {
             i2cDevice = service.openI2cDevice(PortTools.getI2cName(), I2C_ADDRESS);
 //            calibrationData[0] = i2cDevice.readRegWord(REGISTER_TEMPERATURE_CALIBRATION_1);

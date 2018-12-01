@@ -6,7 +6,7 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.google.android.things.pio.Gpio;
-import com.google.android.things.pio.PeripheralManagerService;
+import com.google.android.things.pio.PeripheralManager;
 
 import java.io.IOException;
 
@@ -34,8 +34,8 @@ public class MainActivity extends Activity {
     private void setupLedStrip() {
         try {
             Log.d(TAG, "Initializing LED strip");
-            PeripheralManagerService managerService = new PeripheralManagerService();
-            gpio = managerService.openGpio(GPIO_NAME);
+            PeripheralManager service = PeripheralManager.getInstance();
+            gpio = service.openGpio(GPIO_NAME);
             gpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
             Log.d(TAG, "Start GPIO");
             handler.postDelayed(runnable, 1000l);
@@ -85,7 +85,6 @@ public class MainActivity extends Activity {
      * 闪光一次
      *
      * @throws IOException
-     * @throws InterruptedException
      */
     private void glint() throws IOException, InterruptedException {
         gpio.setValue(true);
@@ -96,7 +95,6 @@ public class MainActivity extends Activity {
     /**
      * 连续闪光2次
      *
-     * @throws InterruptedException
      * @throws IOException
      */
     private void glint2() throws InterruptedException, IOException {
