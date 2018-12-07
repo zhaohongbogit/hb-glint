@@ -1,1 +1,1 @@
-include ':app', ':led', ':power', ':i2c', ':steering'
+include ':power', ':i2c', ':switch'
