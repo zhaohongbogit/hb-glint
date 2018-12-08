@@ -1,1 +1,1 @@
-include ':i2c', ':switch', ':human'
+include ':i2c', ':switch', ':human', ':avoidance', ':avoidance', ':light'
