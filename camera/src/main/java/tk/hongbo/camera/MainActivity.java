@@ -16,6 +16,10 @@ public class MainActivity extends Activity {
     private Handler mCameraHandler;
     private HandlerThread mCameraThread;
 
+    private int sequence = 0;
+
+    Handler handler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,8 +31,20 @@ public class MainActivity extends Activity {
         mCamera = DoorbellCamera.getInstance();
         mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener);
 
-        new Handler().postDelayed(() -> mCamera.takePicture(), 3000);
+        handler = new Handler();
+        handler.post(thread); //立即进行拍照
     }
+
+    Runnable thread = new Runnable() {
+        @Override
+        public void run() {
+            mCamera.takePicture();
+            sequence++;
+            if (sequence < 10) {
+                handler.postDelayed(thread, 5000);
+            }
+        }
+    };
 
     @Override
     protected void onDestroy() {
