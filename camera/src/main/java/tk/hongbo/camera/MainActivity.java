@@ -46,18 +46,15 @@ public class MainActivity extends Activity {
     /**
      * Listener for new camera images.
      */
-    private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            Image image = reader.acquireLatestImage();
-            // get image bytes
-            ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-            final byte[] imageBytes = new byte[imageBuf.remaining()];
-            imageBuf.get(imageBytes);
-            image.close();
+    private ImageReader.OnImageAvailableListener mOnImageAvailableListener = reader -> {
+        Image image = reader.acquireLatestImage();
+        // get image bytes
+        ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+        final byte[] imageBytes = new byte[imageBuf.remaining()];
+        imageBuf.get(imageBytes);
+        image.close();
 
-            onPictureTaken(imageBytes);
-        }
+        onPictureTaken(imageBytes);
     };
 
     /**
