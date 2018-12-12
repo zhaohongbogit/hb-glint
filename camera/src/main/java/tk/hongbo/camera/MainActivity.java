@@ -1,11 +1,15 @@
 package tk.hongbo.camera;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Base64;
+import android.util.Log;
 
 import java.nio.ByteBuffer;
 
@@ -30,21 +34,7 @@ public class MainActivity extends Activity {
 
         mCamera = DoorbellCamera.getInstance();
         mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener);
-
-        handler = new Handler();
-        handler.post(thread); //立即进行拍照
     }
-
-    Runnable thread = new Runnable() {
-        @Override
-        public void run() {
-            mCamera.takePicture();
-            sequence++;
-            if (sequence < 10) {
-                handler.postDelayed(thread, 5000);
-            }
-        }
-    };
 
     @Override
     protected void onDestroy() {
@@ -74,6 +64,22 @@ public class MainActivity extends Activity {
      * Upload image data to Firebase as a doorbell event.
      */
     private void onPictureTaken(final byte[] imageBytes) {
+        if (imageBytes != null) {
+            String imageStr = Base64.encodeToString(imageBytes, Base64.NO_WRAP | Base64.URL_SAFE);
+            Log.d("test", "imageBase64:" + imageStr);
+
+            final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+            if (bitmap != null) {
+            }
+        }
+    }
+
+    /**
+     * 保存数据流为本地图片
+     *
+     * @param imageBytes
+     */
+    private void saveFile(final byte[] imageBytes) {
         if (imageBytes != null) {
             FileUtils.saveFile(imageBytes, getExternalFilesDir("camera").getAbsolutePath());
         }

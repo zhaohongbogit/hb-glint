@@ -23,13 +23,16 @@ import static android.content.Context.CAMERA_SERVICE;
 public class DoorbellCamera {
     private static final String TAG = DoorbellCamera.class.getSimpleName();
 
-    private static final int IMAGE_WIDTH = 320;
-    private static final int IMAGE_HEIGHT = 240;
+    private static final int IMAGE_WIDTH = 1280;
+    private static final int IMAGE_HEIGHT = 720;
     private static final int MAX_IMAGES = 1;
 
     private CameraDevice mCameraDevice;
 
     private CameraCaptureSession mCaptureSession;
+
+    private CaptureRequest.Builder mPreviewBuilder;
+    private Handler backgroundHandler;
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -54,6 +57,7 @@ public class DoorbellCamera {
     public void initializeCamera(Context context,
                                  Handler backgroundHandler,
                                  ImageReader.OnImageAvailableListener imageAvailableListener) {
+        this.backgroundHandler = backgroundHandler;
         // Discover the camera instance
         CameraManager manager = (CameraManager) context.getSystemService(CAMERA_SERVICE);
         String[] camIds = {};
@@ -91,6 +95,11 @@ public class DoorbellCamera {
         public void onOpened(CameraDevice cameraDevice) {
             Log.d(TAG, "Opened camera.");
             mCameraDevice = cameraDevice;
+            try {
+                startPreview(); //开始预览
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -112,6 +121,31 @@ public class DoorbellCamera {
         }
     };
 
+    private void startPreview() throws CameraAccessException {
+        mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        mPreviewBuilder.addTarget(mImageReader.getSurface());
+        mCameraDevice.createCaptureSession(Collections.singletonList(mImageReader.getSurface()),
+                new CameraCaptureSession.StateCallback() {
+                    @Override
+                    public void onConfigured(CameraCaptureSession session) {
+                        // The camera is already closed
+                        if (mCameraDevice == null) {
+                            return;
+                        }
+                        try {
+                            session.setRepeatingRequest(mPreviewBuilder.build(), null, backgroundHandler);
+                        } catch (CameraAccessException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onConfigureFailed(CameraCaptureSession session) {
+                        Log.e(TAG, "Failed to configure camera");
+                    }
+                }, null);
+    }
+
     /**
      * Begin a still image capture
      */
@@ -123,45 +157,36 @@ public class DoorbellCamera {
 
         // Here, we create a CameraCaptureSession for capturing still images.
         try {
-            mCameraDevice.createCaptureSession(
-                    Collections.singletonList(mImageReader.getSurface()),
-                    mSessionCallback,
-                    null);
+            mCameraDevice.createCaptureSession(Collections.singletonList(mImageReader.getSurface()),
+                    new CameraCaptureSession.StateCallback() {
+                        @Override
+                        public void onConfigured(CameraCaptureSession session) {
+                            // The camera is already closed
+                            if (mCameraDevice == null) {
+                                return;
+                            }
+
+                            // When the session is ready, we start capture.
+                            mCaptureSession = session;
+                            triggerImageCapture(); //配置成功后进行屏幕截取
+                        }
+
+                        @Override
+                        public void onConfigureFailed(CameraCaptureSession session) {
+                            Log.e(TAG, "Failed to configure camera");
+                        }
+                    }, null);
         } catch (CameraAccessException cae) {
             Log.e(TAG, "access exception while preparing pic", cae);
         }
     }
 
     /**
-     * Callback handling session state changes
-     */
-    private CameraCaptureSession.StateCallback mSessionCallback =
-            new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                    // The camera is already closed
-                    if (mCameraDevice == null) {
-                        return;
-                    }
-
-                    // When the session is ready, we start capture.
-                    mCaptureSession = cameraCaptureSession;
-                    triggerImageCapture();
-                }
-
-                @Override
-                public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-                    Log.e(TAG, "Failed to configure camera");
-                }
-            };
-
-    /**
      * Execute a new capture request within the active session
      */
     private void triggerImageCapture() {
         try {
-            final CaptureRequest.Builder captureBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             Log.d(TAG, "Session initialized.");
@@ -174,27 +199,26 @@ public class DoorbellCamera {
     /**
      * Callback handling capture session events
      */
-    private final CameraCaptureSession.CaptureCallback mCaptureCallback =
-            new CameraCaptureSession.CaptureCallback() {
+    private final CameraCaptureSession.CaptureCallback mCaptureCallback = new CameraCaptureSession.CaptureCallback() {
 
-                @Override
-                public void onCaptureProgressed(CameraCaptureSession session,
-                                                CaptureRequest request,
-                                                CaptureResult partialResult) {
-                    Log.d(TAG, "Partial result");
-                }
+        @Override
+        public void onCaptureProgressed(CameraCaptureSession session,
+                                        CaptureRequest request,
+                                        CaptureResult partialResult) {
+            Log.d(TAG, "Partial result");
+        }
 
-                @Override
-                public void onCaptureCompleted(CameraCaptureSession session,
-                                               CaptureRequest request,
-                                               TotalCaptureResult result) {
-                    if (session != null) {
-                        session.close();
-                        mCaptureSession = null;
-                        Log.d(TAG, "CaptureSession closed");
-                    }
-                }
-            };
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session,
+                                       CaptureRequest request,
+                                       TotalCaptureResult result) {
+            if (session != null) {
+                session.close();
+                mCaptureSession = null;
+                Log.d(TAG, "CaptureSession closed");
+            }
+        }
+    };
 
 
     /**
