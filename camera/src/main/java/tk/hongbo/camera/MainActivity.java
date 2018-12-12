@@ -20,10 +20,6 @@ public class MainActivity extends Activity {
     private Handler mCameraHandler;
     private HandlerThread mCameraThread;
 
-    private int sequence = 0;
-
-    Handler handler;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
