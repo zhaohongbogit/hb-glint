@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
     public static String path = Environment.getExternalStoragePublicDirectory(DIRECTORY_DCIM) + "/123.jpg";
     public static Handler handler;
 
-    private static final String IP = "";
+    private static final String IP = "192.168.128.233";
     private static final int PORT = 8086;
 
     @Override
