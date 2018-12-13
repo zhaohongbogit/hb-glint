@@ -48,9 +48,6 @@ public class MainActivity extends Activity {
         mCloudThread.start();
         mCloudHandler = new Handler(mCloudThread.getLooper());
 
-        mCamera = DoorbellCamera.getInstance();
-        mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener);
-
         /**
          * 初始化socket服务端
          */
@@ -60,6 +57,12 @@ public class MainActivity extends Activity {
             }
         });
         subThread.creatServer();
+
+        /**
+         * 相机初始化
+         */
+        mCamera = DoorbellCamera.getInstance();
+        mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener);
     }
 
     @Override

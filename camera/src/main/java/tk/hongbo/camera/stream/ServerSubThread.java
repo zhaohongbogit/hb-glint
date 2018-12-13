@@ -30,6 +30,9 @@ public class ServerSubThread {
     public void sendMessage(final Bitmap bitmap) {
         new Thread(() -> {
             try {
+                if (connection == null) {
+                    return;
+                }
                 byte[] outdata = transImage(bitmap, 640, 480);
                 int datalen = outdata.length;
                 out = connection.getOutputStream();
