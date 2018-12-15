@@ -12,11 +12,14 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    private DatabaseReference myRef;
 
     ImageView imageView;
 
@@ -26,12 +29,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView = findViewById(R.id.imageView);
 
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference();
+        myRef = FirebaseDatabase.getInstance().getReference("logs");
         myRef.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                String value = dataSnapshot.getValue(String.class);
+                String value = s;
             }
 
             @Override
@@ -57,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String value = dataSnapshot.getValue(String.class);
+//                String value = dataSnapshot.getValue(String.class);
             }
 
             @Override
@@ -65,5 +67,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.w(TAG, "Failed to read value.", databaseError.toException());
             }
         });
+
+        //TODO test
+        DatabaseReference newRef = myRef.push();
+        newRef.child("timestamp").setValue(ServerValue.TIMESTAMP);
     }
 }
