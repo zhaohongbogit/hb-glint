@@ -2,21 +2,27 @@ package tk.hongbo.camera;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
 
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import tk.hongbo.camera.stream.ServerSubThread;
+import id.zelory.compressor.Compressor;
 
 public class MainActivity extends Activity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -30,8 +36,6 @@ public class MainActivity extends Activity {
 
     private Handler mCloudHandler;
     private HandlerThread mCloudThread;
-
-    public static ServerSubThread subThread; //socket子线程
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,16 +51,6 @@ public class MainActivity extends Activity {
         mCloudThread = new HandlerThread("CloudThread");
         mCloudThread.start();
         mCloudHandler = new Handler(mCloudThread.getLooper());
-
-        /**
-         * 初始化socket服务端
-         */
-        subThread = new ServerSubThread(() -> {
-            switch (ServerSubThread.rec_data) {
-
-            }
-        });
-        subThread.creatServer();
 
         /**
          * 相机初始化
@@ -86,36 +80,51 @@ public class MainActivity extends Activity {
         onPictureTaken(imageBytes);
     };
 
+    private volatile boolean isUploading = false;
+
     /**
      * Upload image data to Firebase as a doorbell event.
      */
     private void onPictureTaken(final byte[] imageBytes) {
+        if (isUploading) {
+            return;
+        }
         if (imageBytes != null) {
-//            DatabaseReference log = mRef.push();
-//            StorageReference seeImage = mStorageRef.child("images/" + log.getKey() + ".jpg");
-//            seeImage.putBytes(imageBytes).addOnSuccessListener(taskSnapshot -> {
-//                log.child("timestamp").setValue(ServerValue.TIMESTAMP);
-//                seeImage.getDownloadUrl().addOnSuccessListener(uri -> {
-//                    log.child("image").setValue(seeImage.toString());
-//                });
-//            }).addOnFailureListener(e -> {
-//                log.removeValue();
-//            });
-            final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-            if (bitmap != null) {
-                subThread.sendMessage(bitmap);
-            }
+            isUploading = true;
+            new Thread(() -> {
+                //需要做图片压缩处理
+                File file = new File(getExternalFilesDir("image") + File.separator + "chche.jpg");
+                File newfile = new File(getExternalFilesDir("image") + File.separator + "chche_new.jpg");
+                FileUtils.saveFile(imageBytes, file.getAbsolutePath());
+
+                try {
+                    if (file.exists()) {
+                        Bitmap bitmap = new Compressor(this).compressToBitmap(file);
+                        FileUtils.saveFile(bitmap, newfile.getAbsolutePath());
+                        pushImageToFirebase(Uri.fromFile(newfile));
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Error to compressor", e);
+                }
+            }).start();
         }
     }
 
-    /**
-     * 保存数据流为本地图片
-     *
-     * @param imageBytes
-     */
-    private void saveFile(final byte[] imageBytes) {
-        if (imageBytes != null) {
-            FileUtils.saveFile(imageBytes, getExternalFilesDir("camera").getAbsolutePath());
-        }
+    private void pushImageToFirebase(Uri localUri) {
+        DatabaseReference ref = mRef.push();
+        ref.child("timestamp").setValue("hongbo", (databaseError, databaseReference) -> {
+            Log.d(TAG, databaseError.getMessage());
+        });
+//        StorageReference seeImage = mStorageRef.child("images/" + ref + ".jpg");
+//        seeImage.putFile(localUri).addOnSuccessListener(taskSnapshot -> {
+//            isUploading = false;
+//            mRef.child(id).child("timestamp").setValue(ServerValue.TIMESTAMP);
+//            seeImage.getDownloadUrl().addOnSuccessListener(uri -> {
+//                mRef.child(id).child("image").setValue(seeImage.toString());
+//            });
+//        }).addOnFailureListener(e -> {
+//            mRef.removeValue();
+//            isUploading = false;
+//        });
     }
 }
