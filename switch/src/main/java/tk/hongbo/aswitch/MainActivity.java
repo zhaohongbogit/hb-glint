@@ -2,6 +2,7 @@ package tk.hongbo.aswitch;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 
 import com.google.android.things.contrib.driver.button.Button;
@@ -18,6 +19,8 @@ public class MainActivity extends Activity {
     private Button mButton;
     private Gpio led;
 
+    private Handler mHandler = new Handler();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,12 +31,14 @@ public class MainActivity extends Activity {
         } catch (IOException e) {
             Log.d(TAG, "Init led error", e);
         }
-        setupButton();
+//        setupButton();
+        mHandler.post(mBlinkRunnable);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mHandler.removeCallbacks(mBlinkRunnable);
         destroyButton();
         if (led != null) {
             try {
@@ -45,6 +50,22 @@ public class MainActivity extends Activity {
             }
         }
     }
+
+    private Runnable mBlinkRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Exit Runnable if the GPIO is already closed
+            if (led == null) {
+                return;
+            }
+            try {
+                led.setValue(!led.getValue());
+                mHandler.postDelayed(mBlinkRunnable, 1000);
+            } catch (IOException e) {
+                Log.e(TAG, "Error on PeripheralIO API", e);
+            }
+        }
+    };
 
     private void setupButton() {
         try {
