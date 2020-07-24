@@ -1,5 +1,5 @@
 # androidThings-glint
-androidThings练手demo，控制LDD灯，进行间隔性闪烁1次和闪烁2次。
+androidThings练手demo，控制LED灯，进行间隔性闪烁1次和闪烁2次。
 
 #### 简介
 使用树莓派3b进行练手，用led灯接电路进行控制
